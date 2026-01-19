@@ -80,6 +80,65 @@ printf '%s' "$2" > "{output_filename}"
 
         assert agent_output.read_text() == prompt_text
 
+    def test_add_inline_prompt_injects_into_codex(
+        self,
+        isolated_tmux_server: TmuxEnvironment,
+        workmux_exe_path: Path,
+        repo_path: Path,
+        fake_agent_installer: FakeAgentInstaller,
+    ):
+        """Inline prompts should be written to PROMPT.md and passed to codex via command substitution."""
+        env = isolated_tmux_server
+        branch_name = "feature-inline-prompt-codex"
+        prompt_text = "Implement inline prompt (codex)"
+        output_filename = "codex_prompt.txt"
+        window_name = get_window_name(branch_name)
+
+        fake_codex_path = fake_agent_installer.install(
+            "codex",
+            f"""#!/bin/sh
+# Debug: log all arguments
+echo "ARGS: $@" > debug_args.txt
+echo "ARG1: $1" >> debug_args.txt
+echo "ARG2: $2" >> debug_args.txt
+
+set -e
+# The implementation calls: codex -- "$(cat PROMPT.md)"
+# So we expect -- as $1 and the prompt content as the second argument
+printf '%s' "$2" > "{output_filename}"
+""",
+        )
+
+        # Use absolute path to ensure we use the fake codex.
+        write_workmux_config(
+            repo_path, agent="codex", panes=[{"command": str(fake_codex_path)}]
+        )
+
+        worktree_path = add_branch_and_get_worktree(
+            env,
+            workmux_exe_path,
+            repo_path,
+            branch_name,
+            extra_args=f"--prompt {shlex.quote(prompt_text)}",
+        )
+
+        # Prompt file is now written to the test's temp directory.
+        assert_prompt_file_contents(env, branch_name, prompt_text)
+
+        agent_output = worktree_path / output_filename
+        debug_output = worktree_path / "debug_args.txt"
+
+        wait_for_file(
+            env,
+            agent_output,
+            timeout=2.0,
+            window_name=window_name,
+            worktree_path=worktree_path,
+            debug_log_path=debug_output,
+        )
+
+        assert agent_output.read_text() == prompt_text
+
 
 class TestPromptFile:
     """Tests for file-based prompt injection."""

@@ -1,0 +1,30 @@
+# Codex → workmux status tracking
+#
+# Copy this `[hooks]` table into `~/.codex/config.toml` to update the current tmux
+# window’s workmux status icon as Codex runs.
+#
+# Requires:
+# - Codex CLI with `[hooks]` support
+# - workmux installed
+# - Codex running inside tmux
+
+[hooks]
+turn_started = [["workmux", "set-window-status", "working"]]
+
+# Approval / user-input prompts
+exec_approval_request = [["workmux", "set-window-status", "waiting"]]
+apply_patch_approval_request = [["workmux", "set-window-status", "waiting"]]
+elicitation_request = [["workmux", "set-window-status", "waiting"]]
+
+# Clear “waiting” on first activity after approval / input
+exec_command_output_delta = [["workmux", "set-window-status", "working"]]
+exec_command_end = [["workmux", "set-window-status", "working"]]
+patch_apply_begin = [["workmux", "set-window-status", "working"]]
+mcp_tool_call_begin = [["workmux", "set-window-status", "working"]]
+web_search_begin = [["workmux", "set-window-status", "working"]]
+
+# Turn end
+turn_complete = [["workmux", "set-window-status", "done"]]
+turn_aborted = [["workmux", "set-window-status", "done"]]
+error = [["workmux", "set-window-status", "done"]]
+
