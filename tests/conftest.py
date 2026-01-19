@@ -337,6 +337,16 @@ class TmuxEnvironment:
         # Without this, zsh shows "Aborting... execute: touch ~/.zshrc" and hangs.
         (self.home_path / ".zshrc").touch()
 
+        # Avoid zsh `compinit` interactive prompts on some CI images where
+        # compaudit detects "insecure directories". These prompts can block tmux
+        # panes and make tests flaky.
+        (self.home_path / ".zshenv").write_text(
+            "if [[ -o interactive ]]; then\n"
+            "  autoload -Uz compinit\n"
+            "  compinit -i\n"
+            "fi\n"
+        )
+
         # Use a short socket path in /tmp to avoid macOS socket path length limits
         # Create a temporary file and use its name for the socket
         tmp_file = tempfile.NamedTemporaryFile(
