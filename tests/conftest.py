@@ -177,7 +177,12 @@ def file_for_commit(worktree_path: Path, commit_message: str) -> Path:
 
 def configure_default_shell(shell: str | None = None) -> list[list[str]]:
     """Return tmux commands that configure the default shell for panes."""
-    shell_path = shell or os.environ.get("SHELL", "/bin/zsh")
+    if shell is not None:
+        shell_path = shell
+    else:
+        # Prefer zsh for deterministic behavior in CI (many tests write ~/.zshrc).
+        preferred = "/bin/zsh"
+        shell_path = preferred if Path(preferred).exists() else os.environ.get("SHELL", "/bin/sh")
     return [["set-option", "-g", "default-shell", shell_path]]
 
 
@@ -332,6 +337,15 @@ class TmuxEnvironment:
         # Without this, zsh shows "Aborting... execute: touch ~/.zshrc" and hangs.
         (self.home_path / ".zshrc").touch()
 
+        # Avoid zsh `compinit` interactive prompts on some CI images where
+        # compaudit detects "insecure directories". These prompts can block tmux
+        # panes and make tests flaky.
+        (self.home_path / ".zshenv").write_text(
+            "if [[ -o interactive ]]; then\n"
+            "  alias compinit='compinit -i'\n"
+            "fi\n"
+        )
+
         # Use a short socket path in /tmp to avoid macOS socket path length limits
         # Create a temporary file and use its name for the socket
         tmp_file = tempfile.NamedTemporaryFile(
@@ -429,9 +443,28 @@ def isolated_tmux_server(tmp_path: Path) -> Generator[TmuxEnvironment, None, Non
 
 def setup_git_repo(path: Path, env_vars: Optional[dict] = None):
     """Initializes a git repository in the given path with an initial commit."""
-    subprocess.run(
-        ["git", "init"], cwd=path, check=True, capture_output=True, env=env_vars
+    init_result = subprocess.run(
+        ["git", "init", "-b", "main"],
+        cwd=path,
+        check=False,
+        capture_output=True,
+        env=env_vars,
     )
+    if init_result.returncode != 0:
+        subprocess.run(
+            ["git", "init"],
+            cwd=path,
+            check=True,
+            capture_output=True,
+            env=env_vars,
+        )
+        subprocess.run(
+            ["git", "checkout", "-b", "main"],
+            cwd=path,
+            check=True,
+            capture_output=True,
+            env=env_vars,
+        )
     # Configure git user for commits
     subprocess.run(
         ["git", "config", "user.name", "Test User"],

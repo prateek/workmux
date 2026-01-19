@@ -1414,11 +1414,8 @@ at-a-glance visibility into what the agent in each window doing.
 - 💬 = agent is waiting for user input
 - ✅ = agent finished (auto-clears on window focus)
 
-**Note**: Currently Claude Code and [OpenCode](https://opencode.ai/) support
-hooks that enable this functionality. Gemini's support is
-[on the way](https://github.com/google-gemini/gemini-cli/issues/9070). Codex
-support can be tracked in
-[this issue](https://github.com/openai/codex/issues/2109).
+**Note**: Claude Code, [OpenCode](https://opencode.ai/), and Codex can drive this
+feature via hooks. Gemini's support is [on the way](https://github.com/google-gemini/gemini-cli/issues/9070).
 
 ### Setup
 
@@ -1446,6 +1443,11 @@ curl -o ~/.config/opencode/plugin/workmux-status.ts \
 ```
 
 Restart OpenCode for the plugin to take effect.
+
+#### Codex
+
+Add the `[hooks]` table from [`./.codex/workmux-status.toml`](.codex/workmux-status.toml)
+to `~/.codex/config.toml`.
 
 ---
 

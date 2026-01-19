@@ -17,7 +17,7 @@ Workmux can display the status of the agent in your tmux window list, giving you
 | Claude Code | ✅ Supported                                                           |
 | OpenCode    | ✅ Supported                                                           |
 | Gemini CLI  | [In progress](https://github.com/google-gemini/gemini-cli/issues/9070) |
-| Codex       | [Tracking issue](https://github.com/openai/codex/issues/2109)          |
+| Codex       | ✅ Supported (via hooks)                                               |
 
 ## Status icons
 
@@ -49,6 +49,32 @@ curl -o ~/.config/opencode/plugin/workmux-status.ts \
 ```
 
 Restart OpenCode for the plugin to take effect.
+
+## Codex setup
+
+Add the following to `~/.codex/config.toml`:
+
+```toml
+[hooks]
+turn_started = [["workmux", "set-window-status", "working"]]
+
+# Approval / user-input prompts
+exec_approval_request = [["workmux", "set-window-status", "waiting"]]
+apply_patch_approval_request = [["workmux", "set-window-status", "waiting"]]
+elicitation_request = [["workmux", "set-window-status", "waiting"]]
+
+# Clear “waiting” on first activity after approval / input
+exec_command_output_delta = [["workmux", "set-window-status", "working"]]
+exec_command_end = [["workmux", "set-window-status", "working"]]
+patch_apply_begin = [["workmux", "set-window-status", "working"]]
+mcp_tool_call_begin = [["workmux", "set-window-status", "working"]]
+web_search_begin = [["workmux", "set-window-status", "working"]]
+
+# Turn end
+turn_complete = [["workmux", "set-window-status", "done"]]
+turn_aborted = [["workmux", "set-window-status", "done"]]
+error = [["workmux", "set-window-status", "done"]]
+```
 
 ## Customization
 
