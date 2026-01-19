@@ -342,8 +342,7 @@ class TmuxEnvironment:
         # panes and make tests flaky.
         (self.home_path / ".zshenv").write_text(
             "if [[ -o interactive ]]; then\n"
-            "  autoload -Uz compinit\n"
-            "  compinit -i\n"
+            "  alias compinit='compinit -i'\n"
             "fi\n"
         )
 
