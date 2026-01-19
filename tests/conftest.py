@@ -177,7 +177,12 @@ def file_for_commit(worktree_path: Path, commit_message: str) -> Path:
 
 def configure_default_shell(shell: str | None = None) -> list[list[str]]:
     """Return tmux commands that configure the default shell for panes."""
-    shell_path = shell or os.environ.get("SHELL", "/bin/zsh")
+    if shell is not None:
+        shell_path = shell
+    else:
+        # Prefer zsh for deterministic behavior in CI (many tests write ~/.zshrc).
+        preferred = "/bin/zsh"
+        shell_path = preferred if Path(preferred).exists() else os.environ.get("SHELL", "/bin/sh")
     return [["set-option", "-g", "default-shell", shell_path]]
 
 
